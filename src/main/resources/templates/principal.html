@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projeto Editora</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            /* Degradê linear de cima para baixo */
+            background: linear-gradient(to bottom, #1e90ff, #87cefa);
+            /* Você pode ajustar as cores e a direção do degradê */
+            height: 100vh; /* Garante que o degradê cubra toda a altura da janela */
+            margin: 0; /* Remove margens padrão */
+        }
+        .screen {
+            display: none;
+        }
+        .active {
+            display: block;
+        }
+        .btn {
+            margin: 10px;
+            padding: 10px 20px;
+            background-color: red;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 200%;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .input-field {
+            margin: 10px 0;
+            padding: 8px;
+            width: 80%;
+        }
+        table {
+            margin: 20px auto;
+            width: 80%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        @keyframes rainbow {
+            0% { color: red; }
+            14% { color: orange; }
+            28% { color: yellow; }
+            42% { color: green; }
+            57% { color: blue; }
+            71% { color: indigo; }
+            85% { color: violet; }
+            100% { color: red; }
+        }
+
+        h1 {
+            font-size: 3em;
+            font-weight: bold;
+            animation: rainbow 5s linear infinite;
+        }
+    </style>
+</head>
+<body>
+
+<div id="mainScreen" class="screen active">
+    <h1>EDITORA</h1>
+    <br>
+    <button class="btn" onclick="showScreen('createArticleScreen')">Criar Artigo</button>
+    <br>
+    <button class="btn" onclick="listArticles()">Obter todos os artigos</button>
+    <br>
+    <button class="btn" onclick="window.close()">Sair</button>
+</div>
+
+<div id="createArticleScreen" class="screen">
+    <h2>Criar Artigo</h2>
+    <input type="text" id="articleTitle" class="input-field" placeholder="Título">
+    <input type="text" id="articleSummary" class="input-field" placeholder="Resumo">
+    <select id="articleStatus" class="input-field">
+        <option value="publicado">Publicado</option>
+        <option value="nao_publicado">Não publicado</option>
+    </select>
+    <br>
+    <button class="btn" onclick="saveArticle()">Salvar</button>
+    <button class="btn" onclick="showScreen('mainScreen')">Voltar</button>
+</div>
+
+<div id="listArticlesScreen" class="screen">
+    <h2>Lista de Artigos</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Título</th>
+            <th>Resumo</th>
+            <th>Status</th>
+        </tr>
+        </thead>
+        <tbody id="articlesTable">
+        </tbody>
+    </table>
+    <button class="btn" onclick="showScreen('mainScreen')">Voltar</button>
+</div>
+
+<script>
+    const apiBaseUrl = '/secauth/principal/api'; // Defina a URL base para a API
+
+    function showScreen(screenId) {
+        console.log("Showing screen: " + screenId);
+        const screens = document.querySelectorAll('.screen');
+        screens.forEach(screen => screen.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+    }
+
+    function listArticles() {
+        console.log("Listing articles...");
+        fetch(`${apiBaseUrl}/artigos`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erro na resposta da rede');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("Data received:", data);
+                showScreen('listArticlesScreen');
+                const table = document.getElementById('articlesTable');
+                table.innerHTML = ''; // Limpar o conteúdo da tabela antes de adicionar novos artigos
+                data.forEach(artigo => {
+                    const row = table.insertRow();
+                    row.insertCell(0).innerText = artigo.id;
+                    row.insertCell(1).innerText = artigo.titulo;
+                    row.insertCell(2).innerText = artigo.resumo;
+                    row.insertCell(3).innerText = artigo.publicado ? 'Publicado' : 'Não publicado';
+                });
+            })
+            .catch(error => {
+                console.error('Erro ao obter os artigos:', error);
+                alert('Erro ao obter os artigos: ' + error.message);
+            });
+    }
+
+
+    function saveArticle() {
+        const title = document.getElementById('articleTitle').value;
+        const summary = document.getElementById('articleSummary').value;
+        const status = document.getElementById('articleStatus').value;
+
+        console.log("Saving article:", { title, summary, status });
+
+        fetch(`${apiBaseUrl}/artigos`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                titulo: title,
+                resumo: summary,
+                publicado: status === 'publicado'
+            })
+        })
+            .then(response => {
+                if (response.ok) {
+                    console.log('Article saved successfully');
+                    // Limpar os campos após o sucesso da operação
+                    document.getElementById('articleTitle').value = '';
+                    document.getElementById('articleSummary').value = '';
+                    document.getElementById('articleStatus').value = 'publicado';
+
+                    // Mostrar a tela principal após salvar o artigo
+                    showScreen('mainScreen');
+                } else {
+                    throw new Error('Erro ao salvar o artigo');
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao salvar o artigo:', error);
+                alert('Erro ao salvar o artigo: ' + error.message);
+            });
+    }
+    
+</script>
+
+</body>
+</html>
